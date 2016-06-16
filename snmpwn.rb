@@ -38,23 +38,22 @@ end
 def findusers(arg)
   users = []
   userfile = File.readlines(arg[:users]).map(&:chomp)
-  # logs = Logger.new('snmp.log')
-  # cmd = TTY::Command.new(output: logs)
-  
   cmd = TTY::Command.new(printer: :null)
+  
   userfile.each do |user|
     out, err = cmd.run!("snmpwalk -u #{user} #{arg[:host]} iso.3.6.1.2.1.1.1.0")
       if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
-        puts "Username: #{user} Is Valid".light_blue
+        puts "Username: #{user} Is Valid".green.bold
         users << user
       elsif err =~ /authorizationError/i
-        puts "Username: #{user} Is Valid".light_blue
+        puts "Username: #{user} Is Valid".green.bold
         users << user
       elsif err =~ /snmpwalk: Unknown user name/
         puts "Username: #{user} Is Not Configured On This Host".red.bold
     end
   end
-  puts users
+  puts "\nValid Users:".green.underline.bold + "\n#{users.join("\n")}".green
+  users
 end
 
 # def findusers(arg)

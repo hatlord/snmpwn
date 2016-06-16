@@ -55,7 +55,9 @@ end
 
 def attack(arg, users)
   passwords = File.readlines(arg[:passlist]).map(&:chomp)
+  encryption_pass = File.readlines(arg[:enclist]).map(&:chomp)
   cmd = TTY::Command.new(printer: :null)
+  # cmd = TTY::Command.new
 
   puts "\nTesting SNMPv3 without authentication and encryption".light_blue.bold
   users.each do |user|   
@@ -70,21 +72,35 @@ end
   puts "\nTesting SNMPv3 with authentication and without encryption".light_blue.bold
   users.each do |user|
     passwords.each do |password|
+      if password.length >= 8
       out, err = cmd.run!("snmpwalk -u #{user} -A #{password} #{arg[:host]} -v3 iso.3.6.1.2.1.1.1.0 -l authnopriv")
         if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
           users.delete(user)
-          puts "#{user} can connect with the password #{password} ".green.bold
+          puts "#{user} can connect with the password #{password}".green.bold
           puts "To connect for a POC, use this string:\nsnmpwalk -u #{user} -A #{password} #{arg[:host]} -v3 -l authnopriv".light_magenta
+        end
+      end
+    end
+  end
+
+  puts "\nTesting SNMPv3 with authentication and encryption".light_blue.bold
+  users.each do |user|
+    passwords.each do |password|
+      encryption_pass.each do |epass|
+        if epass.length >= 8 && password.length >= 8
+        out, err = cmd.run!("snmpwalk -u #{user} -A #{password} -X #{epass} #{arg[:host]} -v3 iso.3.6.1.2.1.1.1.0 -l authpriv", timeout: 0.5)
+          if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
+            users.delete(user)
+            puts "#{user} can connect with the password #{password} and the encryption password #{epass} ".green.bold
+            puts "To connect for a POC, use this string:\nsnmpwalk -u #{user} -A #{password} -X #{epass} #{arg[:host]} -v3 -l authpriv".light_magenta
+          else
+            puts "#{user} cannot connect with the password #{password} and the encryption password #{epass} ".red.bold
+          end
+        end
       end
     end
   end
 end
-
-#snmpwalk: USM generic error - appears to happen when authpriv is set but no encryption password is defined with -X
-#also happens when wrong encryption type is specified
-#if iso.3.6.1.2.1.1.1.0 = STRING: is in response then connected succesfully, otherwise exhaust all usernames and passwords and encryption pass lists
-
-
 
 arg = arguments
 users = findusers(arg)

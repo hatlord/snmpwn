@@ -53,9 +53,11 @@ def findusers(arg, hostfile)
         end
       end
     end
+  if !users.empty?
   puts "\nValid Users:".green.bold
   puts users.to_table(:head => ['User', 'Host'])
     users.each { |user| user.pop }.uniq!.flatten!
+  end
   users
 end
 
@@ -91,9 +93,11 @@ def attack(arg, users, hostfile)
       end
     end
 
-  puts "\nTesting SNMPv3 with authentication and encryption MD5/DES".light_blue.bold
+  puts "\nTesting SNMPv3 with authentication and encryption".light_blue.bold
   valid = []
+  valid_md5aes = []
   valid << ["User", "Password", "Encryption", "Host"]
+  valid_md5aes << ["User", "Password", "Encryption", "Host"]
   hostfile.each do |host|
     users.each do |user|
       passwords.each do |password|
@@ -104,17 +108,31 @@ def attack(arg, users, hostfile)
                 puts "FOUND: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}, MD5/DES".green.bold
                 puts "POC ---> snmpwalk -u #{user} -A #{password} -X #{epass} #{host} -v3 -l authpriv".light_magenta
                 valid << [user, password, epass, host]
+              elsif out !~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
+                out, err = cmd.run!("snmpwalk -u #{user} -A #{password} -a MD5 -X #{epass} -x AES #{host} -v3 iso.3.6.1.2.1.1.1.0 -l authpriv", timeout: arg[:timeout])
+                if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
+                puts "FOUND: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}, MD5/AES".green.bold
+                puts "POC ---> snmpwalk -u #{user} -A #{password} -a MD5 -X #{epass} -x AES #{host} -v3 -l authpriv".light_magenta
+                valid_md5aes << [user, password, epass, host]
+                  
               else
-                puts "FAILED: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}, MD5/DES".red.bold
+                puts "FAILED: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}".red.bold
           end
         end
       end
     end
   end
 end
-puts "\nValid Users - MD5/DES:".green.bold
-puts valid.to_table(:first_row_is_head => true)
+end
+  if !valid[1].empty?
+    puts "\nValid Users - MD5/DES:".green.bold
+    puts valid.to_table(:first_row_is_head => true)
+  if !valid_md5aes[1].empty? 
+    puts "\nValid Users - MD5/AES:".green.bold
+    puts valid_md5aes.to_table(:first_row_is_head => true)
+end
 puts "Finished, please use this information and tool responsibly".green.bold
+end
 end
 
 arg = arguments

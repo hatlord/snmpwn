@@ -41,7 +41,7 @@ def findusers(arg, hostfile, cmd)
     userfile.each do |user|
       out, err = cmd.run!("snmpwalk -u #{user} #{host} iso.3.6.1.2.1.1.1.0")
         if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
-          puts "Username: '#{user}' is valid on #{host}".green.bold
+          puts "FOUND: '#{user}' on #{host}".green.bold
           users << [user, host]
         elsif err =~ /authorizationError/i
           puts "FOUND: '#{user}' on #{host}".green.bold
@@ -54,13 +54,14 @@ def findusers(arg, hostfile, cmd)
   if !users.empty?
   puts "\nValid Users:".green.bold
   puts users.to_table(:head => ['User', 'Host'])
-    users.each { |user| user.pop }.uniq!.flatten!.sort!
+  users.each { |user| user.pop }.uniq!.flatten!.sort!
   end
   users
 end
 
 def noauth(arg, users, hostfile, cmd)
   results = []
+  results << ["User", "Host"]
   encryption_pass = File.readlines(arg[:enclist]).map(&:chomp)
 
   puts "\nTesting SNMPv3 without authentication and encryption".light_blue.bold
@@ -153,6 +154,27 @@ def authpriv_md5aes(arg, users, hostfile, passwords, cmd, cryptopass)
   valid
 end
 
+def authpriv_shades
+end
+
+def authpriv_shaaes
+end
+
+def print(users, no_auth, anp, ap, apaes)
+  #need to get the user summary working to show IPs too
+  puts "\nResults Summary:\n".green.bold
+  puts "Valid Users Per System:".magenta
+  puts users.to_table
+  puts "\nAccounts that did not require a password to connect!".magenta
+  puts no_auth.to_table(:first_row_is_head => true)
+  puts "\nAccount and password (No encryption configured - BAD)".magenta
+  puts anp.to_table(:first_row_is_head => true)
+  puts "\nAccount and password (MD5 Auth and DES Encryption - Should use AES)".magenta
+  puts ap.to_table(:first_row_is_head => true)
+  puts "\nAccount and password (MD5 Auth and AES Encryption - Not too shabby, recommend SHA for auth!".magenta
+  puts apaes.to_table(:first_row_is_head => true)
+end
+
 
 arg = arguments
 hostfile = File.readlines(arg[:hosts]).map(&:chomp)
@@ -161,7 +183,8 @@ cryptopass = File.readlines(arg[:enclist]).map(&:chomp)
 log = Logger.new('debug.log')
 cmd = TTY::Command.new(output: log)
 users = findusers(arg, hostfile, cmd)
-noauth(arg, users, hostfile, cmd)
+no_auth = noauth(arg, users, hostfile, cmd)
 anp = authnopriv(arg, users, hostfile, passwords, cmd)
 ap = authpriv_md5des(arg, users, hostfile, passwords, cmd, cryptopass)
-authpriv_md5aes(arg, users, hostfile, passwords, cmd, cryptopass)
+apaes = authpriv_md5aes(arg, users, hostfile, passwords, cmd, cryptopass)
+print(users, no_auth, anp, ap, apaes)

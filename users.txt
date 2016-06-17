@@ -182,6 +182,8 @@ snmp-Trap
 SNMP_trap
 SNMPv1/v2c
 SNMPv2c
+snmpv3
+snmp3
 solaris
 solarwinds
 sun
@@ -209,6 +211,7 @@ tivoli
 topsecret
 traffic
 trap
+traps
 user
 vterm1
 watch

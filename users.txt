@@ -1,6 +1,13 @@
 authonlyuser
 authprivuser
 internaluser
+noauthuser
+authuser
+privuser
+md5user
+md5desuser
+md5aesuser
+meraki
 cisco1
 cisco2
 cisco3

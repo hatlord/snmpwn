@@ -166,12 +166,16 @@ def print(users, no_auth, anp, ap, apaes)
   puts "Valid Users Per System:".magenta
   puts users.to_table
   puts "\nAccounts that did not require a password to connect!".magenta
+  puts "Example POC: snmpwalk -u username 10.10.10.1".light_magenta
   puts no_auth.to_table(:first_row_is_head => true)
   puts "\nAccount and password (No encryption configured - BAD)".magenta
+  puts "Example POC: snmpwalk -u username -A password 10.10.10.1 -v3 -l authnopriv".light_magenta
   puts anp.to_table(:first_row_is_head => true)
   puts "\nAccount and password (MD5 Auth and DES Encryption - Should use AES)".magenta
+  puts "Example POC: snmpwalk -u username -A password -X password 10.10.10.1 -v3 -l authpriv".light_magenta
   puts ap.to_table(:first_row_is_head => true)
   puts "\nAccount and password (MD5 Auth and AES Encryption - Not too shabby, recommend SHA for auth!".magenta
+  puts "Example POC: snmpwalk -u username -A password -a MD5 -X password -x AES 10.10.10.1 -v3 -l authpriv".light_magenta
   puts apaes.to_table(:first_row_is_head => true)
 end
 

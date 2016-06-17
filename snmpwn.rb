@@ -5,7 +5,8 @@
 require 'tty-command'
 require 'trollop'
 require 'colorize'
-require 'logger' #need to log output to file instead of NULL
+require 'logger'
+require 'text-table'
 
 def arguments
 
@@ -45,15 +46,15 @@ def findusers(arg, hostfile)
           puts "Username: '#{user}' is valid on #{host}".green.bold
           users << [user, host]
         elsif err =~ /authorizationError/i
-          puts "Username: '#{user}' is valid on #{host}".green.bold
+          puts "FOUND: '#{user}' on #{host}".green.bold
           users << [user, host]
         elsif err =~ /snmpwalk: Unknown user name/i
-          puts "Username: '#{user}' is not configured on #{host}".red.bold
+          puts "FAILED: '#{user}' on #{host}".red.bold
         end
       end
     end
   puts "\nValid Users:".green.bold
-    users.each { |user| puts user.join("\t").light_green}
+  puts users.to_table(:head => ['User', 'Host'])
     users.each { |user| user.pop }.uniq!.flatten!
   users
 end
@@ -92,7 +93,7 @@ def attack(arg, users, hostfile)
 
   puts "\nTesting SNMPv3 with authentication and encryption MD5/DES".light_blue.bold
   valid = []
-  valid << ["User".underline, "Password".underline, "Encryption".underline, "Host".underline]
+  valid << ["User", "Password", "Encryption", "Host"]
   hostfile.each do |host|
     users.each do |user|
       passwords.each do |password|
@@ -104,15 +105,15 @@ def attack(arg, users, hostfile)
                 puts "POC ---> snmpwalk -u #{user} -A #{password} -X #{epass} #{host} -v3 -l authpriv".light_magenta
                 valid << [user, password, epass, host]
               else
-                puts "FAILED: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}".red.bold
+                puts "FAILED: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}, MD5/DES".red.bold
           end
         end
       end
     end
   end
 end
-puts "\nValid Users:".green.bold
-valid.each { |valid| puts valid.join("\t").light_green}
+puts "\nValid Users - MD5/DES:".green.bold
+puts valid.to_table(:first_row_is_head => true)
 puts "Finished, please use this information and tool responsibly".green.bold
 end
 

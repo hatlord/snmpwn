@@ -1,3 +1,6 @@
+authonlyuser
+authprivuser
+internaluser
 cisco1
 cisco2
 cisco3

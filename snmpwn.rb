@@ -51,11 +51,11 @@ def findusers(arg, hostfile, cmd)
         end
       end
     end
-  if !users.empty?
-  puts "\nValid Users:".green.bold
-  puts users.to_table(:head => ['User', 'Host'])
-  users.each { |user| user.pop }.uniq!.flatten!.sort!
-  end
+    if !users.empty?
+      puts "\nValid Users:".green.bold
+      puts users.to_table(:head => ['User', 'Host'])
+      users.each { |user| user.pop }.uniq!.flatten!.sort!
+    end
   users
 end
 
@@ -141,7 +141,6 @@ def authpriv_md5aes(arg, users, hostfile, passwords, cmd, cryptopass)
                 if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
                   puts "FOUND: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}, MD5/AES".green.bold
                   puts "POC ---> snmpwalk -u #{user} -A #{password} -a MD5 -X #{epass} -x AES #{host} -v3 -l authpriv".light_magenta
-                  puts "FAILED: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}".red.bold
                   valid << [user, password, epass, host]
                 else
                 puts "FAILED: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}".red.bold
@@ -163,20 +162,24 @@ end
 def print(users, no_auth, anp, ap, apaes)
   #need to get the user summary working to show IPs too
   puts "\nResults Summary:\n".green.bold
-  puts "Valid Users Per System:".magenta
-  puts users.to_table
+    puts "Valid Users Per System:".magenta
+      puts users.to_table
+  
   puts "\nAccounts that did not require a password to connect!".magenta
-  puts "Example POC: snmpwalk -u username 10.10.10.1".light_magenta
-  puts no_auth.to_table(:first_row_is_head => true)
+    puts "Example POC: snmpwalk -u username 10.10.10.1".light_magenta
+      puts no_auth.to_table(:first_row_is_head => true)
+  
   puts "\nAccount and password (No encryption configured - BAD)".magenta
-  puts "Example POC: snmpwalk -u username -A password 10.10.10.1 -v3 -l authnopriv".light_magenta
-  puts anp.to_table(:first_row_is_head => true)
+    puts "Example POC: snmpwalk -u username -A password 10.10.10.1 -v3 -l authnopriv".light_magenta
+      puts anp.to_table(:first_row_is_head => true)
+  
   puts "\nAccount and password (MD5 Auth and DES Encryption - Should use AES)".magenta
-  puts "Example POC: snmpwalk -u username -A password -X password 10.10.10.1 -v3 -l authpriv".light_magenta
-  puts ap.to_table(:first_row_is_head => true)
-  puts "\nAccount and password (MD5 Auth and AES Encryption - Not too shabby, recommend SHA for auth!".magenta
-  puts "Example POC: snmpwalk -u username -A password -a MD5 -X password -x AES 10.10.10.1 -v3 -l authpriv".light_magenta
-  puts apaes.to_table(:first_row_is_head => true)
+    puts "Example POC: snmpwalk -u username -A password -X password 10.10.10.1 -v3 -l authpriv".light_magenta
+      puts ap.to_table(:first_row_is_head => true)
+  
+  puts "\nAccount and password (MD5 Auth and AES Encryption - Encryption OK, recommend SHA for auth!)".magenta
+    puts "Example POC: snmpwalk -u username -A password -a MD5 -X password -x AES 10.10.10.1 -v3 -l authpriv".light_magenta
+      puts apaes.to_table(:first_row_is_head => true)
 end
 
 

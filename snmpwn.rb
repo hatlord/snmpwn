@@ -68,7 +68,7 @@ def findusers(arg, live, cmd)
         if !arg[:showfail]
           spinner.spin
         end
-        if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
+        if out =~ /iso.3.6.1.2.1.1.1.0 = STRING: | SNMPv2-MIB::sysDescr/i
           puts "FOUND: '#{user}' on #{host}".green.bold
           users << [user, host]
         elsif err =~ /authorizationError/i
@@ -84,9 +84,9 @@ def findusers(arg, live, cmd)
     spinner.success('(Complete)')
     if !users.empty? && if !users.nil?
       puts "\nValid Users:".green.bold
-      puts users.to_table(:head => ['User', 'Host'])
+      puts users.to_table(:header => ['User', 'Host'])
       users.each { |user| user.pop }
-      users.uniq!.flatten!.sort! if !users.nil?
+      users.uniq!.flatten!.sort!
     else
       puts "No users enumerated - Try a bigger list".red.bold
     end

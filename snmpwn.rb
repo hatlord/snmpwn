@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 #SNMPwn
 #SNMPv3 User Enumeration and Password Attack Script
+#https://github.com/hatlord/snmpwn
 
 require 'tty-command'
 require 'tty-spinner'
@@ -12,13 +13,12 @@ require 'text-table'
 def arguments
 
   opts = Trollop::options do 
-    version "snmpwn v0.96b".light_blue
+    version "snmpwn v0.97b".light_blue
     banner <<-EOS
-    snmpwn v0.96b
+    snmpwn v0.97b
       EOS
 
-        opt :hosts, "SNMPv3 Server IP", :type => String #change to accept lists of hosts too
-        opt :enum_users, "Emumerate SNMPv3 Users?" #may remove, not currently using
+        opt :hosts, "SNMPv3 Server IP", :type => String
         opt :users, "List of users you want to try", :type => String
         opt :passlist, "Password list for attacks", :type => String
         opt :enclist, "Encryption Password List for AuthPriv types", :type => String
@@ -30,6 +30,10 @@ def arguments
         exit
       end
     end
+    Trollop::die :users, "You must specify a list of users to check for".red.bold if opts[:users].nil?
+    Trollop::die :hosts, "You must specify a list of hosts to test".red.bold if opts[:hosts].nil?
+    Trollop::die :passlist, "You must specify a password list for the attacks".red.bold if opts[:passlist].nil?
+    Trollop::die :enclist, "You must specify an encryption password list for the attacks".red.bold if opts[:enclist].nil?
   opts
 end
 

@@ -68,7 +68,7 @@ def findusers(arg, live, cmd)
         if !arg[:showfail]
           spinner.spin
         end
-        if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:|SNMPv2-MIB::sysDescr/i
+        if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:|SNMPv2-MIB::sysDescr.0 = STRING:/i
           puts "FOUND: '#{user}' on #{host}".green.bold
           users << [user, host]
         elsif err =~ /authorizationError/i
@@ -85,8 +85,7 @@ def findusers(arg, live, cmd)
     if !users.empty? && if !users.nil?
       puts "\nValid Users:".green.bold
       puts users.to_table(:header => ['User', 'Host'])
-      users.each { |user| user.pop }
-      users.uniq!.flatten!.sort!
+      users.each { |user| user.pop }.uniq!.flatten!.sort!
     else
       puts "No users enumerated - Try a bigger list".red.bold
     end
@@ -107,7 +106,7 @@ def noauth(arg, users, live, cmd)
         if !arg[:showfail]
           spinner.spin
         end
-        if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
+        if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:|SNMPv2-MIB::sysDescr.0 = STRING:/i
           puts "'#{user}' can connect without a password to host #{host}".green.bold
           puts "POC ---> snmpwalk -u #{user} #{host}".light_magenta
           results << [user, host]
@@ -136,7 +135,7 @@ def authnopriv(arg, users, live, passwords, cmd)
             if !arg[:showfail]
               spinner.spin
             end
-            if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
+            if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:|SNMPv2-MIB::sysDescr.0 = STRING:/i
               puts "'#{user}' can connect with the password '#{password}'".green.bold
               puts "POC ---> snmpwalk -u #{user} -A #{password} #{host} -v3 -l authnopriv".light_magenta
               results << [user, host, password]
@@ -168,7 +167,7 @@ def authpriv_md5des(arg, users, live, passwords, cmd, cryptopass)
               if !arg[:showfail]
                 spinner.spin
               end
-              if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
+              if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:|SNMPv2-MIB::sysDescr.0 = STRING:/i
                 puts "FOUND: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}, MD5/DES".green.bold
                 puts "POC ---> snmpwalk -u #{user} -A #{password} -X #{epass} #{host} -v3 -l authpriv".light_magenta
                 valid << [user, password, epass, host]
@@ -201,7 +200,7 @@ def authpriv_md5aes(arg, users, live, passwords, cmd, cryptopass)
               if !arg[:showfail]
                 spinner.spin
               end
-              if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
+              if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:|SNMPv2-MIB::sysDescr.0 = STRING:/i
                 puts "FOUND: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}, MD5/AES".green.bold
                 puts "POC ---> snmpwalk -u #{user} -A #{password} -a MD5 -X #{epass} -x AES #{host} -v3 -l authpriv".light_magenta
                 valid << [user, password, epass, host]
@@ -234,7 +233,7 @@ def authpriv_shades(arg, users, live, passwords, cmd, cryptopass)
               if !arg[:showfail]
                 spinner.spin
               end
-              if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
+              if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:|SNMPv2-MIB::sysDescr.0 = STRING:/i
                 puts "FOUND: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}, SHA/DES".green.bold
                 puts "POC ---> snmpwalk -u #{user} -A #{password} -a SHA -X #{epass} -x DES #{host} -v3 -l authpriv".light_magenta
                 valid << [user, password, epass, host]
@@ -267,7 +266,7 @@ def authpriv_shaaes(arg, users, live, passwords, cmd, cryptopass)
               if !arg[:showfail]
                 spinner.spin
               end
-              if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:/i
+              if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:|SNMPv2-MIB::sysDescr.0 = STRING:/i
                 puts "FOUND: Username:'#{user}' Password:'#{password}' Encryption password:'#{epass}' Host:#{host}, SHA/AES".green.bold
                 puts "POC ---> snmpwalk -u #{user} -A #{password} -a SHA -X #{epass} -x AES #{host} -v3 -l authpriv".light_magenta
                 valid << [user, password, epass, host]

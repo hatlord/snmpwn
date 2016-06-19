@@ -68,7 +68,7 @@ def findusers(arg, live, cmd)
         if !arg[:showfail]
           spinner.spin
         end
-        if out =~ /iso.3.6.1.2.1.1.1.0 = STRING: | SNMPv2-MIB::sysDescr/i
+        if out =~ /iso.3.6.1.2.1.1.1.0 = STRING:|SNMPv2-MIB::sysDescr/i
           puts "FOUND: '#{user}' on #{host}".green.bold
           users << [user, host]
         elsif err =~ /authorizationError/i

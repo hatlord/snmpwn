@@ -87,6 +87,7 @@ def findusers(arg, live, cmd)
       puts users.to_table(:head => ['User', 'Host'])
       users.each { |user| user.pop }.uniq!.flatten!.sort!
     end
+  end
   users
 end
 

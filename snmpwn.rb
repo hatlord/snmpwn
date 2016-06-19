@@ -82,7 +82,7 @@ def findusers(arg, live, cmd)
     end
   end
     spinner.success('(Complete)')
-    if !users.empty? && !users.nil?
+    if !users.empty? && if !users.nil?
       puts "\nValid Users:".green.bold
       puts users.to_table(:head => ['User', 'Host'])
       users.each { |user| user.pop }.uniq!.flatten!.sort!

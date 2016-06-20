@@ -22,7 +22,8 @@ You need to provide the script a list of users, a hosts list, a password list an
 > ./snmpwn.rb --hosts hosts.txt --users users.txt --passlist passwords.txt --enclist passwords.txt
 
 ## Screengrabs  
-![User Enumeration]({{site.baseurl}}/https://cloud.githubusercontent.com/assets/5301488/16200404/19169936-3705-11e6-9a36-5add20c72d57.jpg)
+
+![User Enumeration]({{site.baseurl}}/https://cloud.githubusercontent.com/assets/5301488/16200880/0a9a54ea-3707-11e6-9d2c-a246276bf034.png)
 
 
 

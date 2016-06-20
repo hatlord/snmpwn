@@ -82,10 +82,11 @@ def findusers(arg, live, cmd)
     end
   end
     spinner.success('(Complete)')
-    if !users.empty? && if !users.nil?
+    if !users.empty? and if !users.nil?
       puts "\nValid Users:".green.bold
       puts users.to_table(:header => ['User', 'Host'])
-      users.each { |user| user.pop }.uniq!.flatten!.sort!
+      users.each { |user| user.pop }.flatten!.uniq!
+      users.sort!
     else
       puts "No users enumerated - Try a bigger list".red.bold
     end

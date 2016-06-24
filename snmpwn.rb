@@ -81,15 +81,15 @@ def findusers(arg, live, cmd)
       end
     end
   end
+  if users.empty? or users.nil?
+    spinner.error('No users Found, script exiting! - Try a bigger/different list!')
+    exit
+  else
     spinner.success('(Complete)')
-    if !users.empty? and if !users.nil?
       puts "\nValid Users:".green.bold
       puts users.to_table(:header => ['User', 'Host'])
       users.each { |user| user.pop }.flatten!.uniq!
       users.sort!
-    else
-      puts "No users enumerated - Try a bigger list".red.bold
-    end
   end
   users
 end
@@ -99,7 +99,8 @@ def noauth(arg, users, live, cmd)
   results << ["User", "Host"]
   encryption_pass = File.readlines(arg[:enclist]).map(&:chomp)
   spinner = TTY::Spinner.new("[:spinner] NULL Password Check...", format: :spin_2)
-
+  
+  if !users.empty? and !users.nil?
   puts "\nTesting SNMPv3 without authentication and encryption".light_blue.bold
   live.each do |host|
     users.each do |user|   
@@ -114,12 +115,13 @@ def noauth(arg, users, live, cmd)
         else
           if arg[:showfail]
           puts "FAILED: Username:'#{user}' Host:#{host}".red.bold
+          end
         end
       end
     end
   end
-  spinner.success('(Complete)')
-  results
+spinner.success('(Complete)')
+results
 end
 
 def authnopriv(arg, users, live, passwords, cmd)
@@ -127,6 +129,7 @@ def authnopriv(arg, users, live, passwords, cmd)
   results << ["User", "Host", "Password"]
   spinner = TTY::Spinner.new("[:spinner] Password Attack (No Crypto)...", format: :spin_2)
 
+  if !users.empty? and !users.nil?
   puts "\nTesting SNMPv3 with authentication and without encryption".light_blue.bold
   live.each do |host|
     users.each do |user|
@@ -143,6 +146,7 @@ def authnopriv(arg, users, live, passwords, cmd)
             else
               if arg[:showfail]
                 puts "FAILED: Username:'#{user} Password:'#{password} Host: #{host}".red.bold
+              end
             end
           end
         end
@@ -158,6 +162,7 @@ def authpriv_md5des(arg, users, live, passwords, cmd, cryptopass)
   valid << ["User", "Password", "Encryption", "Host"]
   spinner = TTY::Spinner.new("[:spinner] Password Attack (MD5/DES)...", format: :spin_2)
 
+  if !users.empty? and !users.nil?
   puts "\nTesting SNMPv3 with MD5 authentication and DES encryption".light_blue.bold
   live.each do |host|
     users.each do |user|
@@ -182,6 +187,7 @@ def authpriv_md5des(arg, users, live, passwords, cmd, cryptopass)
       end
     end
   end
+end   
   spinner.success('(Complete)')
   valid
 end
@@ -191,6 +197,7 @@ def authpriv_md5aes(arg, users, live, passwords, cmd, cryptopass)
   valid << ["User", "Password", "Encryption", "Host"]
   spinner = TTY::Spinner.new("[:spinner] Password Attack (MD5/AES)...", format: :spin_2)
 
+  if !users.empty? and !users.nil?
   puts "\nTesting SNMPv3 with MD5 authentication and AES encryption".light_blue.bold
   live.each do |host|
     users.each do |user|
@@ -215,6 +222,7 @@ def authpriv_md5aes(arg, users, live, passwords, cmd, cryptopass)
       end
     end
   end
+end
   spinner.success('(Complete)')
   valid
 end
@@ -224,6 +232,7 @@ def authpriv_shades(arg, users, live, passwords, cmd, cryptopass)
   valid << ["User", "Password", "Encryption", "Host"]
   spinner = TTY::Spinner.new("[:spinner] Password Attack (SHA/DES)...", format: :spin_2)
 
+  if !users.empty? and !users.nil?
   puts "\nTesting SNMPv3 with SHA authentication and DES encryption".light_blue.bold
   live.each do |host|
     users.each do |user|
@@ -248,6 +257,7 @@ def authpriv_shades(arg, users, live, passwords, cmd, cryptopass)
       end
     end
   end
+end
   spinner.success('(Complete)')
   valid
 end
@@ -257,6 +267,7 @@ def authpriv_shaaes(arg, users, live, passwords, cmd, cryptopass)
   valid << ["User", "Password", "Encryption", "Host"]
   spinner = TTY::Spinner.new("[:spinner] Password Attack (SHA/AES)...", format: :spin_2)
 
+  if !users.empty? and !users.nil?
   puts "\nTesting SNMPv3 with SHA authentication and AES encryption".light_blue.bold
   live.each do |host|
     users.each do |user|
@@ -281,12 +292,13 @@ def authpriv_shaaes(arg, users, live, passwords, cmd, cryptopass)
       end
     end
   end
+end
   spinner.success('(Complete)')
   valid
 end
 
 def print(users, no_auth, anp, ap, apaes, apsd, apsa)
-  #need to get the user summary working to show IPs too
+
   puts "\nResults Summary:\n".green.bold
     puts "Valid Users Per System:".magenta
       puts users.to_table
@@ -294,15 +306,15 @@ def print(users, no_auth, anp, ap, apaes, apsd, apsa)
   puts "\nAccounts that did not require a password to connect!".magenta
     puts "Example POC: snmpwalk -u username 10.10.10.1".light_magenta
       puts no_auth.to_table(:first_row_is_head => true)
-  
+
   puts "\nAccount and password (No encryption configured - BAD)".magenta
     puts "Example POC: snmpwalk -u username -A password 10.10.10.1 -v3 -l authnopriv".light_magenta
       puts anp.to_table(:first_row_is_head => true)
-  
+
   puts "\nAccount and password (MD5 Auth and DES Encryption - recommend SHA auth and AES for crypto!)".magenta
     puts "Example POC: snmpwalk -u username -A password -X password 10.10.10.1 -v3 -l authpriv".light_magenta
       puts ap.to_table(:first_row_is_head => true)
-  
+
   puts "\nAccount and password (MD5 Auth and AES Encryption - Encryption OK, recommend SHA for auth!)".magenta
     puts "Example POC: snmpwalk -u username -A password -a MD5 -X password -x AES 10.10.10.1 -v3 -l authpriv".light_magenta
       puts apaes.to_table(:first_row_is_head => true)

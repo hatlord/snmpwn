@@ -96,7 +96,6 @@ end
 
 def noauth(arg, users, live, cmd)
   results = []
-  results << ["User", "Host"]
   encryption_pass = File.readlines(arg[:enclist]).map(&:chomp)
   spinner = TTY::Spinner.new("[:spinner] NULL Password Check...", format: :spin_2)
   
@@ -126,7 +125,6 @@ end
 
 def authnopriv(arg, users, live, passwords, cmd)
   results = []
-  results << ["User", "Host", "Password"]
   spinner = TTY::Spinner.new("[:spinner] Password Attack (No Crypto)...", format: :spin_2)
 
   if !users.empty? and !users.nil?
@@ -159,7 +157,6 @@ end
 
 def authpriv_md5des(arg, users, live, passwords, cmd, cryptopass)
   valid = []
-  valid << ["User", "Password", "Encryption", "Host"]
   spinner = TTY::Spinner.new("[:spinner] Password Attack (MD5/DES)...", format: :spin_2)
 
   if !users.empty? and !users.nil?
@@ -194,7 +191,6 @@ end
 
 def authpriv_md5aes(arg, users, live, passwords, cmd, cryptopass)
   valid = []
-  valid << ["User", "Password", "Encryption", "Host"]
   spinner = TTY::Spinner.new("[:spinner] Password Attack (MD5/AES)...", format: :spin_2)
 
   if !users.empty? and !users.nil?
@@ -229,7 +225,6 @@ end
 
 def authpriv_shades(arg, users, live, passwords, cmd, cryptopass)
   valid = []
-  valid << ["User", "Password", "Encryption", "Host"]
   spinner = TTY::Spinner.new("[:spinner] Password Attack (SHA/DES)...", format: :spin_2)
 
   if !users.empty? and !users.nil?
@@ -264,7 +259,6 @@ end
 
 def authpriv_shaaes(arg, users, live, passwords, cmd, cryptopass)
   valid = []
-  valid << ["User", "Password", "Encryption", "Host"]
   spinner = TTY::Spinner.new("[:spinner] Password Attack (SHA/AES)...", format: :spin_2)
 
   if !users.empty? and !users.nil?
@@ -305,27 +299,33 @@ def print(users, no_auth, anp, ap, apaes, apsd, apsa)
   
   puts "\nAccounts that did not require a password to connect!".magenta
     puts "Example POC: snmpwalk -u username 10.10.10.1".light_magenta
-      puts no_auth.to_table(:first_row_is_head => true)
+      no_auth.unshift ["User", "Host"]
+        puts no_auth.to_table(:first_row_is_head => true)
 
   puts "\nAccount and password (No encryption configured - BAD)".magenta
     puts "Example POC: snmpwalk -u username -A password 10.10.10.1 -v3 -l authnopriv".light_magenta
-      puts anp.to_table(:first_row_is_head => true)
+      anp.unshift ["User", "Host", "Password"]
+        puts anp.to_table(:first_row_is_head => true)
 
   puts "\nAccount and password (MD5 Auth and DES Encryption - recommend SHA auth and AES for crypto!)".magenta
     puts "Example POC: snmpwalk -u username -A password -X password 10.10.10.1 -v3 -l authpriv".light_magenta
-      puts ap.to_table(:first_row_is_head => true)
+      ap.unshift ["User", "Password", "Encryption", "Host"]
+        puts ap.to_table(:first_row_is_head => true)
 
   puts "\nAccount and password (MD5 Auth and AES Encryption - Encryption OK, recommend SHA for auth!)".magenta
     puts "Example POC: snmpwalk -u username -A password -a MD5 -X password -x AES 10.10.10.1 -v3 -l authpriv".light_magenta
-      puts apaes.to_table(:first_row_is_head => true)
+      apaes.unshift ["User", "Password", "Encryption", "Host"]
+        puts apaes.to_table(:first_row_is_head => true)
 
   puts "\nAccount and password (SHA Auth and DES Encryption - Auth OK, recommend AES for crypto!)".magenta
     puts "Example POC: snmpwalk -u username -A password -a SHA -X password -x DES 10.10.10.1 -v3 -l authpriv".light_magenta
-      puts apsd.to_table(:first_row_is_head => true)
+      apsd.unshift ["User", "Password", "Encryption", "Host"]
+        puts apsd.to_table(:first_row_is_head => true)
 
   puts "\nAccount and password (SHA Auth and AES Encryption - Auth OK, Crypto OK!)".magenta
     puts "Example POC: snmpwalk -u username -A password -a SHA -X password -x AES 10.10.10.1 -v3 -l authpriv".light_magenta
-      puts apsa.to_table(:first_row_is_head => true)
+      apsa.unshift ["User", "Password", "Encryption", "Host"]
+        puts apsa.to_table(:first_row_is_head => true)
 end
 
 

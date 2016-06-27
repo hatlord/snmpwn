@@ -10,7 +10,7 @@ SNMPwn is an SNMPv3 user enumerator and attack tool. It is a legitimate security
     - Authentication and encryption (All types supported, MD5, SHA, DES, AES) - (authpriv)
     
 ##  **Notes for usage**
-Built for and tested on Kali Linux 2.x rolling. Should work on any Linux platform but does not work currently on Mac OSX, but will when I get around to it. This is due to the stdin and stdout messages for snmpwalk on OSX being different. This script basically wraps snmpwalk. The version of snmpwalk I used was 5.7.3.  
+Built for and tested on Kali Linux 2.x rolling. Should work on any Linux platform but does not work currently on Mac OSX, but will when I get around to it. This is due to the stdout messages for snmpwalk on OSX being different. This script basically wraps snmpwalk. The version of snmpwalk I used was 5.7.3.  
 ## **Install** 
 Clone the repo  
 gem install bundler  

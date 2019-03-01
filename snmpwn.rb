@@ -12,7 +12,7 @@ require 'text-table'
 
 def arguments
 
-  opts = Trollop::options do 
+  opts = Trollop::options do
     version "snmpwn v0.97b".light_blue
     banner <<-EOS
     snmpwn v0.97b
@@ -60,11 +60,15 @@ def findusers(arg, live, cmd)
   users = []
   userfile = File.readlines(arg[:users]).map(&:chomp)
   spinner = TTY::Spinner.new("[:spinner] Checking Users... ", format: :spin_2)
-  
+
   puts "\nEnumerating SNMPv3 users".light_blue.bold
   live.each do |host|
     userfile.each do |user|
+      begin
       out, err = cmd.run!("snmpwalk -u #{user} #{host} iso.3.6.1.2.1.1.1.0")
+      rescue TTY::Command::TimeoutExceeded => @timeout_error
+        puts "Timeout: #{host} #{user}:#{password}".red.bold if @timeout_error
+      end
         if !arg[:showfail]
           spinner.spin
         end
@@ -98,12 +102,16 @@ def noauth(arg, users, live, cmd)
   results = []
   encryption_pass = File.readlines(arg[:enclist]).map(&:chomp)
   spinner = TTY::Spinner.new("[:spinner] NULL Password Check...", format: :spin_2)
-  
+
   if !users.empty? and !users.nil?
   puts "\nTesting SNMPv3 without authentication and encryption".light_blue.bold
   live.each do |host|
-    users.each do |user|   
+    users.each do |user|
+      begin
       out, err = cmd.run!("snmpwalk -u #{user} #{host} iso.3.6.1.2.1.1.1.0")
+      rescue TTY::Command::TimeoutExceeded => @timeout_error
+        puts "Timeout: #{host} #{user}:#{password}".red.bold if @timeout_error
+      end
         if !arg[:showfail]
           spinner.spin
         end
@@ -133,7 +141,11 @@ def authnopriv(arg, users, live, passwords, cmd)
     users.each do |user|
       passwords.each do |password|
         if password.length >= 8
-          out, err = cmd.run!("snmpwalk -u #{user} -A #{password} #{host} -v3 iso.3.6.1.2.1.1.1.0 -l authnopriv")
+          begin
+            out, err = cmd.run!("snmpwalk -u #{user} -A #{password} #{host} -v3 iso.3.6.1.2.1.1.1.0 -l authnopriv")
+          rescue TTY::Command::TimeoutExceeded => @timeout_error
+            puts "Timeout: #{host} #{user}:#{password}".red.bold if @timeout_error
+          end
             if !arg[:showfail]
               spinner.spin
             end
@@ -166,7 +178,11 @@ def authpriv_md5des(arg, users, live, passwords, cmd, cryptopass)
       passwords.each do |password|
         cryptopass.each do |epass|
           if epass.length >= 8 && password.length >= 8
-            out, err = cmd.run!("snmpwalk -u #{user} -A #{password} -X #{epass} #{host} -v3 iso.3.6.1.2.1.1.1.0 -l authpriv", timeout: arg[:timeout])
+            begin
+              out, err = cmd.run!("snmpwalk -u #{user} -A #{password} -X #{epass} #{host} -v3 iso.3.6.1.2.1.1.1.0 -l authpriv", timeout: arg[:timeout])
+            rescue TTY::Command::TimeoutExceeded => @timeout_error
+              puts "Timeout: #{host} #{user}:#{password}".red.bold if @timeout_error
+            end
               if !arg[:showfail]
                 spinner.spin
               end
@@ -184,7 +200,7 @@ def authpriv_md5des(arg, users, live, passwords, cmd, cryptopass)
       end
     end
   end
-end   
+end
   spinner.success('(Complete)')
   valid
 end
@@ -200,7 +216,11 @@ def authpriv_md5aes(arg, users, live, passwords, cmd, cryptopass)
       passwords.each do |password|
         cryptopass.each do |epass|
           if epass.length >= 8 && password.length >= 8
-            out, err = cmd.run!("snmpwalk -u #{user} -A #{password} -a MD5 -X #{epass} -x AES #{host} -v3 iso.3.6.1.2.1.1.1.0 -l authpriv", timeout: arg[:timeout])
+            begin
+              out, err = cmd.run!("snmpwalk -u #{user} -A #{password} -a MD5 -X #{epass} -x AES #{host} -v3 iso.3.6.1.2.1.1.1.0 -l authpriv", timeout: arg[:timeout])
+            rescue TTY::Command::TimeoutExceeded => @timeout_error
+              puts "Timeout: #{host} #{user}:#{password}".red.bold if @timeout_error
+            end
               if !arg[:showfail]
                 spinner.spin
               end
@@ -234,7 +254,11 @@ def authpriv_shades(arg, users, live, passwords, cmd, cryptopass)
       passwords.each do |password|
         cryptopass.each do |epass|
           if epass.length >= 8 && password.length >= 8
-            out, err = cmd.run!("snmpwalk -u #{user} -A #{password} -a SHA -X #{epass} -x DES #{host} -v3 iso.3.6.1.2.1.1.1.0 -l authpriv", timeout: arg[:timeout])
+            begin
+              out, err = cmd.run!("snmpwalk -u #{user} -A #{password} -a SHA -X #{epass} -x DES #{host} -v3 iso.3.6.1.2.1.1.1.0 -l authpriv", timeout: arg[:timeout])
+            rescue TTY::Command::TimeoutExceeded => @timeout_error
+              puts "Timeout: #{host} #{user}:#{password}".red.bold if @timeout_error
+            end
               if !arg[:showfail]
                 spinner.spin
               end
@@ -268,7 +292,11 @@ def authpriv_shaaes(arg, users, live, passwords, cmd, cryptopass)
       passwords.each do |password|
         cryptopass.each do |epass|
           if epass.length >= 8 && password.length >= 8
-            out, err = cmd.run!("snmpwalk -u #{user} -A #{password} -a SHA -X #{epass} -x AES #{host} -v3 iso.3.6.1.2.1.1.1.0 -l authpriv", timeout: arg[:timeout])
+            begin
+              out, err = cmd.run!("snmpwalk -u #{user} -A #{password} -a SHA -X #{epass} -x AES #{host} -v3 iso.3.6.1.2.1.1.1.0 -l authpriv", timeout: arg[:timeout])
+            rescue TTY::Command::TimeoutExceeded => @timeout_error
+              puts "Timeout: #{host} #{user}:#{password}".red.bold if @timeout_error
+            end
               if !arg[:showfail]
                 spinner.spin
               end
@@ -296,7 +324,7 @@ def print(users, no_auth, anp, ap, apaes, apsd, apsa)
   puts "\nResults Summary:\n".green.bold
     puts "Valid Users Per System:".magenta
       puts users.to_table
-  
+
   puts "\nAccounts that did not require a password to connect!".magenta
     puts "Example POC: snmpwalk -u username 10.10.10.1".light_magenta
       no_auth.unshift ["User", "Host"]

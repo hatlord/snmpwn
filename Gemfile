@@ -3,7 +3,7 @@ source "https://rubygems.org"
 
 gem 'tty-command'
 gem 'tty-spinner'
-gem 'trollop'
+gem 'optimist'
 gem 'colorize'
 gem 'logger'
 gem 'text-table'

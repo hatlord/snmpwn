@@ -5,14 +5,14 @@
 
 require 'tty-command'
 require 'tty-spinner'
-require 'trollop'
+require 'optimist'
 require 'colorize'
 require 'logger'
 require 'text-table'
 
 def arguments
 
-  opts = Trollop::options do
+  opts = Optimist::options do
     version "snmpwn v0.97b".light_blue
     banner <<-EOS
     snmpwn v0.97b
@@ -30,10 +30,10 @@ def arguments
         exit
       end
     end
-    Trollop::die :users, "You must specify a list of users to check for".red.bold if opts[:users].nil?
-    Trollop::die :hosts, "You must specify a list of hosts to test".red.bold if opts[:hosts].nil?
-    Trollop::die :passlist, "You must specify a password list for the attacks".red.bold if opts[:passlist].nil?
-    Trollop::die :enclist, "You must specify an encryption password list for the attacks".red.bold if opts[:enclist].nil?
+    Optimist::die :users, "You must specify a list of users to check for".red.bold if opts[:users].nil?
+    Optimist::die :hosts, "You must specify a list of hosts to test".red.bold if opts[:hosts].nil?
+    Optimist::die :passlist, "You must specify a password list for the attacks".red.bold if opts[:passlist].nil?
+    Optimist::die :enclist, "You must specify an encryption password list for the attacks".red.bold if opts[:enclist].nil?
   opts
 end
 
